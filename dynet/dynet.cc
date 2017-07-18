@@ -27,21 +27,27 @@ size_t Node::aux_storage_size() const { return 0; }
 // TODO: This is a lot of code for something simple. Can it be shortened?
 void Node::forward(const std::vector<const Tensor*>& xs,
                    Tensor& fx) const {
+  std::cout << " 1\n";
   if (this->supports_multibatch() || fx.d.batch_elems() == 1) {
+    std::cout << "o 2\n";
     forward_impl(xs, fx);
   } else {
+    std::cout << " 2\n";
     size_t i;
     std::vector<Tensor> xs_elems(xs.size());
     std::vector<const Tensor*> xs_ptrs(xs.size());
     std::vector<size_t> xs_sizes(xs.size());
+    std::cout << "hola 3\n";
     for (i = 0; i < xs.size(); ++i) {
       xs_elems[i] = xs[i]->batch_elem(0);
       xs_ptrs[i] = &xs_elems[i];
       xs_sizes[i] = xs_elems[i].d.size();
     }
+    std::cout << " 4\n";
     Tensor fx_elem(fx.batch_elem(0));
     size_t fx_size = fx_elem.d.size();
     forward_impl(xs_ptrs, fx_elem);
+    std::cout << " 5\n";
     for (unsigned b = 1; b < fx.d.batch_elems(); ++b) {
       for (i = 0; i < xs.size(); ++i)
         if (xs[i]->d.bd > 1)
@@ -50,6 +56,7 @@ void Node::forward(const std::vector<const Tensor*>& xs,
       forward_impl(xs_ptrs, fx_elem);
     }
   }
+  std::cout << " 6\n";
 }
 
 void Node::backward(const std::vector<const Tensor*>& xs,

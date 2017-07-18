@@ -431,9 +431,17 @@ DYNET_NODE_INST_DEV_IMPL(KMaxPooling)
 
 template<class MyDevice>
 void SumDimension::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
+  std::cout << "start\n";
   DYNET_ASSERT(xs.size() == 1, "Failed input count check in SumDimension");
+  std::cout << "  1\n";
   Eigen::array<int, 1> reduction_axis = {(int)dimension};
-  fx.t<1>().device(*dev.edevice) = xs[0]->t<2>().sum(reduction_axis);
+  std::cout << "  2\n";
+  if (dev.type == DeviceType::ThreadPool) {
+    fx.t<1>().device(*(new Eigen::DefaultDevice)) = xs[0]->t<2>().sum(reduction_axis);
+  } else {
+    fx.t<1>().device(*dev.edevice) = xs[0]->t<2>().sum(reduction_axis);
+  }
+  std::cout << "  3\n";
 }
 
 template<class MyDevice>

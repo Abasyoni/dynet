@@ -34,15 +34,25 @@ BOOST_FIXTURE_TEST_SUITE(mem_test, MemTest);
 
 BOOST_AUTO_TEST_CASE( expand_test ) {
   if(!autobatch_flag) {
+    std::cout << "1\n";
     dynet::Model mod;
+    std::cout << "1\n";
     dynet::Parameter param = mod.add_parameters({1024,1024});
+    std::cout << "1\n";
     SimpleSGDTrainer trainer(mod);
+    std::cout << "1\n";
     dynet::ComputationGraph cg;
+    std::cout << "1\n";
     Expression x = parameter(cg, param);
+    std::cout << "1\n";
     Expression z = sum_rows(sum_cols(x));
+    std::cout << "2\n";
     cg.forward(z);
+    std::cout << "3\n";
     cg.backward(z);
+    std::cout << "1\n";
     trainer.update(0.1);
+    std::cout << "1\n";
   }
 }
 

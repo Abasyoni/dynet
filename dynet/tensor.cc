@@ -347,7 +347,15 @@ void TensorTools::accumulate(Tensor& v, const Tensor& v_src) {
 
 template <class MyDevice>
 void TensorTools::constant_dev(MyDevice & dev, Tensor& d, float c) {
-  d.tvec().device(*dev.edevice) = d.tvec().constant(c);
+  std::cout << "    1";
+  if (dev.type == DeviceType::ThreadPool) {//no support for threadpool here
+    std::cout << "    2";
+    d.tvec().device(*(new Eigen::DefaultDevice)) = d.tvec().constant(c);
+  } else {
+    std::cout << "    3";
+    d.tvec().device(*dev.edevice) = d.tvec().constant(c);
+  }
+  std::cout << "    4";
 }
 #ifdef __CUDACC__
 template void TensorTools::constant_dev<Device_GPU>(Device_GPU & dev, Tensor& d, float c);
@@ -358,13 +366,13 @@ extern template void TensorTools::constant_dev<Device_GPU>(Device_GPU & dev, Ten
 void TensorTools::constant(Tensor& d, float c) {
   if (d.device->type == DeviceType::CPU) { return constant_dev(*(Device_CPU*)d.device, d, c); }
   else if (d.device->type == DeviceType::GPU) { return constant_dev(*(Device_GPU*)d.device, d, c); }
-  else if (d.device->type == DeviceType::ThreadPool) { return constant_dev(*(Device_ThreadPool*)d.device, d, c); }
+  else if (d.device->type == DeviceType::ThreadPool) { return constant_dev(*(Device_CPU*)d.device, d, c); }
   else { throw std::runtime_error("Bad device type lol"); }
 }
 #else
 void TensorTools::constant(Tensor& d, float c) {
   if (d.device->type == DeviceType::CPU) { return constant_dev(*(Device_CPU*)d.device, d, c); }
-  else if (d.device->type == DeviceType::ThreadPool) { return constant_dev(*(Device_ThreadPool*)d.device, d, c); }
+  else if (d.device->type == DeviceType::ThreadPool) { return constant_dev(*(Device_CPU*)d.device, d, c); }
   else { throw std::runtime_error("Bad device type lol"); }
 }
 #endif

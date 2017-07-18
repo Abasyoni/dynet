@@ -81,43 +81,57 @@ const Tensor& SimpleExecutionEngine::incremental_forward() {
 const Tensor& SimpleExecutionEngine::incremental_forward(VariableIndex i) {
   DYNET_ASSERT(i < cg.nodes.size(), "Out-of-bounds variable access in SimpleExecutionEngine::incremental_forward()");
 
+  std::cout << "1\n";
   // free any old memory if this is a new CG
   if (num_nodes_evaluated == 0)
     for(Device* dev : dynet::devices)
       dev->pools[(int)DeviceMempool::FXS]->free();
 
+  std::cout << "2\n";
   if (i >= num_nodes_evaluated) {
     nfxs.resize(i + 1);
 
+    std::cout << "if 3\n";
     //vector<string> dummy(5, "x");
     vector<const Tensor*> xs(16);
     for (; num_nodes_evaluated <= i; ++num_nodes_evaluated) {
+      std::cout << "loop 3.5\n" << num_nodes_evaluated;
       const Node* node = cg.nodes[num_nodes_evaluated];
       xs.resize(node->arity());
       unsigned ai = 0;
+      std::cout << "loop 4\n";
       for (VariableIndex arg : node->args) {
         xs[ai] = &nfxs[arg];
         ++ai;
       }
+      std::cout << "5\n";
       nfxs[num_nodes_evaluated].d = node->dim;
       // Get the device
       DYNET_ASSERT(node->device != nullptr, "Attempt to access null device in SimpleExecutionEngine::incremental_forward");
       nfxs[num_nodes_evaluated].device = node->device;
       nfxs[num_nodes_evaluated].mem_pool = DeviceMempool::FXS;
+      std::cout << "6\n";
       // Get the memory
       nfxs[num_nodes_evaluated].v = static_cast<float*>(nfxs[num_nodes_evaluated].device->pools[(int)DeviceMempool::FXS]->allocate(node->dim.size() * sizeof(float)));
+      std::cout << "7\n";
       if (nfxs[num_nodes_evaluated].v == nullptr)
         DYNET_RUNTIME_ERR("Ran out of memory when executing node " << num_nodes_evaluated);
+        std::cout << "8\n";
       void* aux_mem = nullptr;
       size_t aux_size = node->aux_storage_size();
       if (aux_size) {
+        std::cout << "9\n";
         aux_mem = nfxs[num_nodes_evaluated].device->pools[(int)DeviceMempool::FXS]->allocate(aux_size);
         if (!aux_mem)
           DYNET_RUNTIME_ERR("Ran out of auxiliary memory when executing node " << num_nodes_evaluated);
       }
+      std::cout << "10\n";
       node->aux_mem = aux_mem;
 
+      std::cout << "10.5\n";
+      std::cout << node;
       node->forward(xs, nfxs[num_nodes_evaluated]);
+      std::cout << "11\n";
     }
   }
 
