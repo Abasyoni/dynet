@@ -1,10 +1,16 @@
 **Model**: XOR
+
 **Input**: x = (bool, bool)
+
 **Output**: y = bool
+
 **Objective Function**: *f(x, y) = 1 iff (x, y) = (0, 1) or (1, 0) and f(x, y) = 0 otherwise*
+
 **Training Data**: *((x, y), f(x, y)) = ((0, 1), 1), ((1, 0), 1), ((0, 0), 0), ((1, 1), 0)*
+
 **Model**: The network has the following dimension
        *2 -> 8 -> 8 -> 8 -> 1 -> 1*
+
 **Nodes**: 
 1. *First* node is a linear transformation of the input with dimensions *2 -> 8*.
 2. *Second* node adds an 8 dimensional bias vector to the resulting 8  dimensional vector, resulting in an 8 dimensional vector.
