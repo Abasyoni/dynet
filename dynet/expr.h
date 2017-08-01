@@ -1120,6 +1120,65 @@ Expression hinge(const Expression& x, const std::vector<unsigned> * pindices, fl
 
 /**
  * \ingroup lossoperations
+ * \brief Dimensionwise hinge loss
+ * \details This expression calculates the hinge loss over a particular dimension ``d``.
+ *
+ * \param x A matrix of scores
+ * \param indices The indices of the correct candidate (equal in length to the
+ *                dimension not specified by "d")
+ * \param d The dimension over which to calculate the loss (0 or 1)
+ * \param m The margin
+ *
+ * \return A vector of hinge losses for each index in ``indices``.
+ */
+Expression hinge_dim(const Expression& x, const std::vector<unsigned>& indices, unsigned d = 0, float m = 1.0);
+
+/**
+ * \ingroup lossoperations
+ * \brief Modifiable dimensionwise hinge loss
+ * \details This function calculates the modifiable version of dimensionwise hinge loss.
+ *
+ * \param x A vector of scores
+ * \param pindex A pointer to the index of the correct candidate
+ * \param d The dimension over which to calculate the loss (0 or 1)
+ * \param m The margin
+ *
+ * \return A vector of hinge losses for each index in ``indices``.
+ */
+Expression hinge_dim(const Expression& x, const std::vector<unsigned>* pindex, unsigned d = 0, float m = 1.0);
+
+/**
+ * \ingroup lossoperations
+ * \brief Batched dimensionwise hinge loss
+ * \details The same as dimensionwise hinge loss, but for the case where ``x`` is a mini-batched tensor
+ *          with ``indices.size()`` batch elements.
+ *
+ * \param x A mini-batch of vectors with ``indices.size()`` batch elements
+ * \param indices The indices of the correct candidates for each batch element
+ * \param d The dimension over which to calculate the loss (0 or 1)
+ * \param m The margin
+ *
+ * \return A vector of hinge losses for each mini-batch
+ */
+Expression hinge_dim(const Expression& x, const std::vector<std::vector<unsigned> >& indices, unsigned d = 0, float m = 1.0);
+
+/**
+ * \ingroup lossoperations
+ * \brief Batched modifiable hinge loss
+ * \details A combination of the previous batched and modifiable hinge loss functions, where
+ *          vector ``*pindices`` can be modified.
+ *
+ * \param x A mini-batch of vectors with ``indices.size()`` batch elements
+ * \param pindices Pointer to the indices of the correct candidates for each batch element
+ * \param d The dimension over which to calculate the loss (0 or 1)
+ * \param m The margin
+ *
+ * \return The hinge loss of each mini-batch
+ */
+Expression hinge_dim(const Expression& x, const std::vector<std::vector<unsigned> >* pindices, unsigned d = 0, float m = 1.0);
+
+/**
+ * \ingroup lossoperations
  * \brief Sparsemax
  * \details The sparsemax function (Martins et al. 2016), which is similar to softmax,
  *          but induces sparse solutions where most of the vector elements are zero.
@@ -2090,6 +2149,72 @@ Expression layer_norm(const Expression& x, const Expression& g, const Expression
  * \return An expression of the same dimension as `w`
  */
 Expression weight_norm(const Expression& w, const Expression& g);
+
+/**
+ * \ingroup lstm
+ * \brief Computes LSTM matrix multiplies plus nonlinearities
+ * \details Computes LSTM gates (matrix multiply + nonlinearities) as follows:
+ *
+ *     gates_i = sigmoid (Wx_i * x_t + Wh_i * h_tm1 + b_i)
+ *     gates_f = sigmoid (Wx_f * x_t + Wh_f * h_tm1 + b_f + 1)
+ *     gates_o = sigmoid (Wx_o * x_t + Wh_o * h_tm1 + b_o)
+ *     gates_g =   tanh  (Wx_g * x_t + Wh_g * h_tm1 + b_g)
+ *
+ *     Where optionally gaussian noise with the given standard deviation is applied to Wx, Wh, b parameters.
+ *
+ *     returns [gates_i]
+ *             [gates_f]
+ *             [gates_o]
+ *             [gates_g]
+ *
+ *
+ * \param x_t Input at current timestep (vector size I)
+ * \param h_tm1 h of previous timestep
+ * \param Wx State previous timestep (vector size H)
+ * \param Wh Parameter matrix size 4H x I
+ * \param b Bias parameter size 4H
+ * \param weightnoise_std: apply gaussian noise to weights (Wx, Wh, b); requires only temporary additional memory
+ * \return An expression with dimensions 4H
+ */
+Expression vanilla_lstm_gates(const Expression& x_t,  const Expression& h_tm1, const Expression& Wx, const Expression& Wh, const Expression& b, real weightnoise_std=0.f);
+
+/**
+ * \ingroup lstm
+ * \brief Computes LSTM matrix multiplies plus nonlinearities, while applying a dropout mask to input and previous state
+ * \param x_t Input at current timestep (vector size I)
+ * \param h_tm1 h of previous timestep
+ * \param Wx State previous timestep (vector size H)
+ * \param Wh Parameter matrix size 4H x I
+ * \param b Bias parameter size 4H
+ * \param dropout_mask_x Input dropout mask, size I
+ * \param dropout_mask_h Hidden state dropout mask, size H
+ * \param weightnoise_std: apply gaussian noise to weights (Wx, Wh, b); requires only temporary additional memory
+ * \return An expression with dimensions 4H
+ */
+Expression vanilla_lstm_gates(const Expression& x_t,  const Expression& h_tm1, const Expression& Wx, const Expression& Wh, const Expression& b, const Expression& dropout_mask_x, const Expression& dropout_mask_h, real weightnoise_std=0.f);
+
+/**
+ * \ingroup lstm
+ * \brief Computes LSTM cell state
+ * \details Computes LSTM cell: c_t = gates_i . gates_g + gates_f . c_tm1
+ *
+ * \param c_tm1 Cell at previous timestep (vector size H)
+ * \param gates_t Gates at current timestep as computed by vanilla_lstm_gates (vector size 4H)
+ * \return Vector size H
+ */
+Expression vanilla_lstm_c(const Expression& c_tm1, const Expression& gates_t);
+
+/**
+ * \ingroup lstm
+ * \brief Computes LSTM hidden state
+ * \details Computes LSTM output: h_t = o_t . tanh(c_t)
+ *
+ * \param c_t Cell at current timestep (vector size H)
+ * \param gates_t Gates at current timestep as computed by vanilla_lstm_gates (vector size 4H)
+ * \return Vector size H
+ */
+
+Expression vanilla_lstm_h(const Expression& c_t, const Expression& gates_t);
 
 }  // namespace dynet
 

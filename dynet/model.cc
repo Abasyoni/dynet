@@ -51,6 +51,8 @@ namespace dynet {
 ParameterStorageBase::~ParameterStorageBase() {}
 
 ParameterStorage::ParameterStorage(const Dim& d, float scale, const std::string & name) : name(name), dim(d), updated(true), nonzero_grad(false), owner(nullptr) {
+  DYNET_ARG_CHECK(default_device != nullptr,
+                  "Attempting to define parameters before initializing DyNet. Be sure to call dynet::initialize() before defining your model.");
   values.d = g.d = d;
   values.device = g.device = default_device;
   default_device->allocate_tensor(DeviceMempool::PS, values);
@@ -66,6 +68,8 @@ ParameterStorage::ParameterStorage(const Dim& d, float scale, const std::string 
 }
 
 ParameterStorage::ParameterStorage(const Dim& d, const ParameterInit & init, const std::string & name) : name(name), dim(d), updated(true), nonzero_grad(false), owner(nullptr) {
+  DYNET_ARG_CHECK(default_device != nullptr,
+                  "Attempting to define parameters before initializing DyNet. Be sure to call dynet::initialize() before defining your model.");
   values.d = g.d = d;
   values.device = g.device = default_device;
   default_device->allocate_tensor(DeviceMempool::PS, values);
@@ -97,12 +101,18 @@ void ParameterStorage::clip(float left, float right) {
   TensorTools::clip(values, left, right);
 }
 
+void ParameterStorage::set_value(const std::vector<float>& val) {
+  TensorTools::set_elements(values, val);
+}
+
 bool valid_parameter(const std::string & s) {
   auto it = std::find_if(s.begin(), s.end(), [] (char ch) { return ch == '/' || ch == '_'; });
   return it == s.end();
 }
 
 LookupParameterStorage::LookupParameterStorage(unsigned n, const Dim& d, const ParameterInit & init, const std::string & name) : name(name), dim(d), updated(true), all_updated(false), nonzero_grad(false), owner(nullptr) {
+  DYNET_ARG_CHECK(default_device != nullptr,
+                  "Attempting to define parameters before initializing DyNet. Be sure to call dynet::initialize() before defining your model.");
   all_dim = dim; all_dim.d[all_dim.nd++] = n;
   all_grads.d = all_values.d = all_dim;
   all_grads.device = all_values.device = default_device;
@@ -176,6 +186,10 @@ string Parameter::get_fullname() const {
 void Parameter::clip_inplace(float left, float right){
   float my_scale = 1./ current_weight_decay();
   get_storage().clip(left * my_scale, right * my_scale);
+}
+
+void Parameter::set_value(const std::vector<float>& val){
+  get_storage().set_value(val);
 }
 
 void Parameter::set_updated(bool b) {
@@ -463,12 +477,12 @@ const ParameterCollectionStorage& ParameterCollection::get_storage() const {
 
 void save_dynet_model(std::string filename, ParameterCollection* model) {
   TextFileSaver saver(filename);
-  saver.save(*model, "model");
+  saver.save(*model, "/model");
 };
 
 void load_dynet_model(std::string filename, ParameterCollection* model) {
   TextFileLoader loader(filename);
-  loader.populate(*model, "model");
+  loader.populate(*model, "/model");
 };
 
 Model::Model() : ParameterCollection() {

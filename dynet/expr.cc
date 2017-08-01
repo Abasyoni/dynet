@@ -90,6 +90,10 @@ Expression hinge(const Expression& x, unsigned index, float m) { return Expressi
 Expression hinge(const Expression& x, const unsigned* pindex, float m) { return Expression(x.pg, x.pg->add_function<Hinge>({x.i}, pindex, m)); }
 Expression hinge(const Expression& x, const std::vector<unsigned> & indices, float m) { return Expression(x.pg, x.pg->add_function<Hinge>({x.i}, indices, m)); }
 Expression hinge(const Expression& x, const std::vector<unsigned> * pindices, float m) { return Expression(x.pg, x.pg->add_function<Hinge>({x.i}, pindices, m)); }
+Expression hinge_dim(const Expression& x, const std::vector<unsigned> & index, unsigned d, float m) { return Expression(x.pg, x.pg->add_function<HingeDim>({x.i}, index, d, m)); }
+Expression hinge_dim(const Expression& x, const std::vector<unsigned> * pindex, unsigned d, float m) { return Expression(x.pg, x.pg->add_function<HingeDim>({x.i}, pindex, d, m)); }
+Expression hinge_dim(const Expression& x, const std::vector<std::vector<unsigned> > & indices, unsigned d, float m) { return Expression(x.pg, x.pg->add_function<HingeDim>({x.i}, indices, d, m)); }
+Expression hinge_dim(const Expression& x, const std::vector<std::vector<unsigned> > * pindices, unsigned d, float m) { return Expression(x.pg, x.pg->add_function<HingeDim>({x.i}, pindices, d, m)); }
 Expression log_softmax(const Expression& x) { return Expression(x.pg, x.pg->add_function<LogSoftmax>({x.i})); }
 Expression log_softmax(const Expression& x, const vector<unsigned>& d) { return Expression(x.pg, x.pg->add_function<RestrictedLogSoftmax>({x.i}, d)); }
 Expression sparsemax(const Expression& x) { return Expression(x.pg, x.pg->add_function<Sparsemax>({x.i})); }
@@ -196,5 +200,18 @@ Expression layer_norm(const Expression& x, const Expression& g, const Expression
 }
 
 Expression weight_norm(const Expression& w, const Expression& g){return Expression(w.pg, w.pg->add_function<WeightNormalization>({w.i,g.i}));}
+
+Expression vanilla_lstm_gates(const Expression& x_t, const Expression& h_tm1, const Expression& Wx, const Expression& Wh, const Expression& b, real weightnoise_std){
+  return Expression(x_t.pg, x_t.pg->add_function<VanillaLSTMGates>({x_t.i, h_tm1.i, Wx.i, Wh.i, b.i}, weightnoise_std));
+}
+Expression vanilla_lstm_gates(const Expression& x_t, const Expression& h_tm1, const Expression& Wx, const Expression& Wh, const Expression& b, const Expression& dropout_mask_x, const Expression& dropout_mask_h, real weightnoise_std){
+  return Expression(x_t.pg, x_t.pg->add_function<VanillaLSTMGates>({x_t.i, h_tm1.i, Wx.i, Wh.i, b.i, dropout_mask_x.i, dropout_mask_h.i}, weightnoise_std));
+}
+Expression vanilla_lstm_c(const Expression& c_tm1, const Expression& gates_t){
+  return Expression(c_tm1.pg, c_tm1.pg->add_function<VanillaLSTMC>({c_tm1.i, gates_t.i}));
+}
+Expression vanilla_lstm_h(const Expression& c_t, const Expression& gates_t){
+  return Expression(c_t.pg, c_t.pg->add_function<VanillaLSTMH>({c_t.i, gates_t.i}));
+}
 
 }  // namespace dynet
