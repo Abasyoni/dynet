@@ -749,6 +749,7 @@ Expression cube(const Expression& x);
  */
 Expression cube_grad(const Expression& x);
 
+
 /**
  * \ingroup arithmeticoperations
  * \brief Log gamma
@@ -2226,6 +2227,17 @@ Expression vanilla_lstm_c(const Expression& c_tm1, const Expression& gates_t);
  */
 
 Expression vanilla_lstm_h(const Expression& c_t, const Expression& gates_t);
+
+/**
+ * \ingroup gradient operator
+ * \brief gradient
+ * \details adds gradient nodes so that the result is the gradient
+ *
+ * \param Y and X are the expressions for which the result is dY/dX
+ *
+ * \return An expression equivalent to dY/dX
+ */
+Expression gradient_op(const Expression& y, const Expression& x);
 
 }  // namespace dynet
 

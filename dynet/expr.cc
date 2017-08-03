@@ -214,5 +214,22 @@ Expression vanilla_lstm_c(const Expression& c_tm1, const Expression& gates_t){
 Expression vanilla_lstm_h(const Expression& c_t, const Expression& gates_t){
   return Expression(c_t.pg, c_t.pg->add_function<VanillaLSTMH>({c_t.i, gates_t.i}));
 }
+Expression gradient_op(const Expression& y, const Expression& x) {
+  ComputationGraph* cg = y.pg;
+  VariableIndex xi = x.i;
+  VariableIndex yi = y.i;
+  Node* last = cg->nodes[yi];
+  Node* first = cg->nodes[xi];
+  if (((last->args).size() != 1) || (xi != (last->args)[0])) {
+    std::cout << "failure, first level dependency supported only\n";
+    return y;
+  }
+  const std::vector<std::string> v = {""};
+  if (last->as_string(v) != "cube()") {
+    std::cout << "failure, only cube node is implemented\n";
+    return y;
+  }
+  return Expression(cg, cg->add_function<CubeGrad>({xi}));
+}
 
 }  // namespace dynet
