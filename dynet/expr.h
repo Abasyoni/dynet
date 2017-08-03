@@ -740,6 +740,17 @@ Expression cube(const Expression& x);
 
 /**
  * \ingroup arithmeticoperations
+ * \brief CubeGrad
+ * \details Calculate elementwise y_i = 3*x_i^2
+ *
+ * \param x The input expression
+ *
+ * \return An expression where the ith element is equal to 3*x_i^2
+ */
+Expression cube_grad(const Expression& x);
+
+/**
+ * \ingroup arithmeticoperations
  * \brief Log gamma
  * \details Calculate elementwise y_i = ln(gamma(x_i))
  *

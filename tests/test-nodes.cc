@@ -655,6 +655,15 @@ BOOST_AUTO_TEST_CASE( cube_gradient ) {
   BOOST_CHECK(check_grad(mod, z, 0));
 }
 
+// Expression cube(const Expression& x);
+BOOST_AUTO_TEST_CASE( cube_grad_gradient ) {
+  dynet::ComputationGraph cg;
+  Expression x1 = parameter(cg, param1);
+  Expression y = cube_grad(x1);
+  Expression z = sum_elems(y);
+  BOOST_CHECK(check_grad(mod, z, 0));
+}
+
 // Expression lgamma(const Expression& x);
 BOOST_AUTO_TEST_CASE( lgamma_gradient ) {
   dynet::ComputationGraph cg;

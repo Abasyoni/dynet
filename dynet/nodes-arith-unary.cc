@@ -73,6 +73,40 @@ void Cube::backward_dev_impl(const MyDevice & dev,
 }
 DYNET_NODE_INST_DEV_IMPL(Cube)
 
+
+// ************* Cube Grad *************
+
+#ifndef __CUDACC__
+
+string CubeGrad::as_string(const vector<string>& arg_names) const {
+  ostringstream s;
+  s << "CubeGrad(" << arg_names[0] << ')';
+  return s.str();
+}
+
+Dim CubeGrad::dim_forward(const vector<Dim>& xs) const {
+  DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Square")
+  return xs[0];
+}
+
+#endif
+
+template<class MyDevice>
+void CubeGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
+  fx.tvec().device(*dev.edevice) = xs[0]->tvec().square() * 3.f;
+}
+
+template<class MyDevice>
+void CubeGrad::backward_dev_impl(const MyDevice & dev,
+                             const vector<const Tensor*>& xs,
+                             const Tensor& fx,
+                             const Tensor& dEdf,
+                             unsigned i,
+                             Tensor& dEdxi) const {
+  dEdxi.tvec().device(*dev.edevice) += dEdf.tvec() * xs[0]->tvec() * 6.f;
+}
+DYNET_NODE_INST_DEV_IMPL(CubeGrad)
+
 // ************* Sqrt *************
 
 #ifndef __CUDACC__
