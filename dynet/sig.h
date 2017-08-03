@@ -10,7 +10,7 @@ namespace dynet {
 
   namespace nt {
     enum NodeType { 
-      tanh=1, sqrt, abs, erf, square, cube, exp, cube_grad, loggamma, log, nobackprop, flipgradient, identity, negate, rectify, logistic, softsign,
+      tanh=1, sqrt, sqrt_grad, abs, erf, square, cube, exp, cube_grad, loggamma, log, nobackprop, flipgradient, identity, negate, rectify, logistic, softsign,
       plus_const, concat, cmult, sum, squared_distance, softmax, pnls, pickrange, scalar_mult,
       input, scalar_input, lookup, 
       COMPLEX,

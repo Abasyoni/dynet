@@ -673,6 +673,17 @@ Expression sqrt(const Expression& x);
 
 /**
  * \ingroup arithmeticoperations
+ * \brief Square root gradient
+ * \details Elementwise square root gradient.
+ *
+ * \param x The input expression
+ *
+ * \return An expression where the ith element is equal to \f$1/2*\sqrt(x_i)\f$
+ */
+Expression sqrt_grad(const Expression& x);
+
+/**
+ * \ingroup arithmeticoperations
  * \brief Absolute value
  * \details Elementwise absolute value.
  *

@@ -80,7 +80,7 @@ DYNET_NODE_INST_DEV_IMPL(Cube)
 
 string CubeGrad::as_string(const vector<string>& arg_names) const {
   ostringstream s;
-  s << "CubeGrad(" << arg_names[0] << ')';
+  s << "cube_grad(" << arg_names[0] << ')';
   return s.str();
 }
 
@@ -139,6 +139,39 @@ void Sqrt::backward_dev_impl(const MyDevice & dev,
   dEdxi.tvec().device(*dev.edevice) += fx.tvec().binaryExpr(dEdf.tvec(), FSqrtBackward());
 }
 DYNET_NODE_INST_DEV_IMPL(Sqrt)
+
+// ************* SqrtGrad *************
+
+#ifndef __CUDACC__
+
+string SqrtGrad::as_string(const vector<string>& arg_names) const {
+  ostringstream s;
+  s << "sqrt_grad(" << arg_names[0] << ')';
+  return s.str();
+}
+
+Dim SqrtGrad::dim_forward(const vector<Dim>& xs) const {
+  DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Sqrt")
+  return xs[0];
+}
+
+#endif
+
+template<class MyDevice>
+void SqrtGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
+  fx.tvec().device(*dev.edevice) = xs[0]->tvec().sqrt().inverse() / 2.f;
+}
+
+template<class MyDevice>
+void SqrtGrad::backward_dev_impl(const MyDevice & dev,
+                             const vector<const Tensor*>& xs,
+                             const Tensor& fx,
+                             const Tensor& dEdf,
+                             unsigned i,
+                             Tensor& dEdxi) const {
+  dEdxi.tvec().device(*dev.edevice) += xs[0]->tvec().inverse() * fx.tvec() / (-2.f);
+}
+DYNET_NODE_INST_DEV_IMPL(SqrtGrad)
 
 // ************* Exp *************
 

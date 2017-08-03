@@ -601,6 +601,15 @@ BOOST_AUTO_TEST_CASE( sqrt_gradient ) {
   BOOST_CHECK(check_grad(mod, z, 0));
 }
 
+// Expression sqrt_grad(const Expression& x);
+BOOST_AUTO_TEST_CASE( sqrt_grad_gradient ) {
+  dynet::ComputationGraph cg;
+  Expression x3 = parameter(cg, param3);
+  Expression y = sqrt_grad(x3);
+  Expression z = sum_elems(y);
+  BOOST_CHECK(check_grad(mod, z, 0));
+}
+
 // Expression abs(const Expression& x);
 BOOST_AUTO_TEST_CASE( abs_gradient ) {
   dynet::ComputationGraph cg;
