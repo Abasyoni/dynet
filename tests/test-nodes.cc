@@ -597,8 +597,22 @@ BOOST_AUTO_TEST_CASE( sqrt_gradient ) {
   dynet::ComputationGraph cg;
   Expression x3 = parameter(cg, param3);
   Expression y = sqrt(x3);
-  Expression z = sum_elems(y);
-  BOOST_CHECK(check_grad(mod, z, 0));
+  Expression z = sqrt_grad(x3);
+  Expression w = sum_elems(z);
+  BOOST_CHECK(check_grad(mod, w, 0));
+}
+
+//Expression grad(sqrt(x), x)
+BOOST_AUTO_TEST_CASE( grad_sqrt_gradient ) {
+  dynet::ComputationGraph cg;
+  Expression x3 = parameter(cg, param3);
+  Expression y1 = sqrt(x3);
+  Expression y2 = cube(y1);
+  Expression y3 = sqrt(y2);
+  Expression y4 = cube(y3);
+  Expression z = gradient_op(y4, x3);
+  Expression w = sum_elems(z);
+  BOOST_CHECK(check_grad(mod, w, 0));
 }
 
 // Expression sqrt_grad(const Expression& x);

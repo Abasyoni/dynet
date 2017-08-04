@@ -179,7 +179,6 @@ Expression sum_elems(const Expression& x) { return Expression(x.pg, x.pg->add_fu
 Expression mean_elems(const Expression& x) { return Expression(x.pg, x.pg->add_function<MomentElements>({x.i}, 1)); }
 Expression moment_elems(const Expression& x, unsigned r) { return Expression(x.pg, x.pg->add_function<MomentElements>({x.i}, r)); }
 Expression std_elems(const Expression& x) { return Expression(x.pg, x.pg->add_function<StdElements>({x.i})); }
-
 Expression sum_batches(const Expression& x) { return Expression(x.pg, x.pg->add_function<SumBatches>({x.i})); }
 Expression moment_batches(const Expression& x, unsigned r) { return Expression(x.pg, x.pg->add_function<MomentBatches>({x.i}, r)); }
 Expression mean_batches(const Expression& x) { return Expression(x.pg, x.pg->add_function<MomentBatches>({x.i}, 1)); }
@@ -221,16 +220,48 @@ Expression gradient_op(const Expression& y, const Expression& x) {
   VariableIndex yi = y.i;
   Node* last = cg->nodes[yi];
   Node* first = cg->nodes[xi];
-  if (((last->args).size() != 1) || (xi != (last->args)[0])) {
-    std::cout << "failure, first level dependency supported only\n";
-    return y;
+   
+  std::vector<Node*> path;
+  Node* tmp = last;
+  while (true) {
+    if ((tmp->args).size() != 1) {
+      std::cout << "failure, no forks are allowed yet\n";
+      return y;
+    }
+    path.push_back(tmp);
+    if (xi != (tmp->args)[0]) {
+      tmp = cg->nodes[(tmp->args)[0]];
+    } else {
+      path.push_back(cg->nodes[xi]);
+      break;
+    }
   }
-  const std::vector<std::string> v = {""};
-  if (last->as_string(v) != "cube()") {
-    std::cout << "failure, only cube node is implemented\n";
-    return y;
+  // path is last, ..., first
+  // now create the nodes
+  VariableIndex prev = xi;
+  Node* current = nullptr;
+  VariableIndex accum;
+  VariableIndex grad_resi;
+  while (path.size() > 1) {
+    path.pop_back();
+    current = path[path.size()-1]; // current_node
+    const std::vector<std::string> v = {""};
+    if (current->as_string(v) == "cube()") {
+      grad_resi = cg->add_function<CubeGrad>({prev});
+    } else if (current->as_string(v) == "sqrt()") {
+      grad_resi = cg->add_function<SqrtGrad>({prev});
+    } else {
+      std::cout << "failure, only cube node is implemented\n";
+      return y;
+    }
+
+    if (prev == xi) {
+      accum = grad_resi;
+    } else {
+      accum = cg->add_function<MatrixMultiply>({grad_resi, accum});
+    }
   }
-  return Expression(cg, cg->add_function<CubeGrad>({xi}));
+  return Expression(cg, accum);
 }
 
 }  // namespace dynet
