@@ -27,6 +27,8 @@ struct Cube : public Node {
 // y = 3 \odot x_1 \odot x_1
 struct CubeGrad : public Node {
   explicit CubeGrad(const std::initializer_list<VariableIndex>& a) : Node(a) {}
+  template <typename T>
+  explicit CubeGrad(const T&c) : Node(c) {}
   virtual bool supports_multibatch() const override { return true; }
   virtual int autobatch_sig(const ComputationGraph &cg, SigMap &sm) const override { Sig s(nt::cube_grad); return sm.get_idx(s); }
   virtual std::vector<int> autobatch_concat(const ComputationGraph & cg) const override { return std::vector<int>(1, 1); }  
@@ -45,6 +47,8 @@ struct Sqrt : public Node {
 // y = 1 / (2 \odot sqrt x_1)
 struct SqrtGrad : public Node {
   explicit SqrtGrad(const std::initializer_list<VariableIndex>& a) : Node(a) {}
+  template <typename T>
+  explicit SqrtGrad(const T&c) : Node(c) {}
   virtual bool supports_multibatch() const override { return true; }
   virtual int autobatch_sig(const ComputationGraph &cg, SigMap &sm) const override { Sig s(nt::sqrt_grad); return sm.get_idx(s); }
   virtual std::vector<int> autobatch_concat(const ComputationGraph & cg) const override { return std::vector<int>(1, 1); }  

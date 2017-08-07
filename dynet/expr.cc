@@ -2,8 +2,13 @@
 
 #include <initializer_list>
 
+#include <map>
+#include <limits>
 #include "dynet/nodes.h"
 #include "dynet/nodes-conv.h"
+
+#define ONE UINT_MAX
+#define ZERO (UINT_MAX-1)
 
 namespace dynet {
 
@@ -214,54 +219,68 @@ Expression vanilla_lstm_c(const Expression& c_tm1, const Expression& gates_t){
 Expression vanilla_lstm_h(const Expression& c_t, const Expression& gates_t){
   return Expression(c_t.pg, c_t.pg->add_function<VanillaLSTMH>({c_t.i, gates_t.i}));
 }
-Expression gradient_op(const Expression& y, const Expression& x) {
-  ComputationGraph* cg = y.pg;
-  VariableIndex xi = x.i;
-  VariableIndex yi = y.i;
-  Node* last = cg->nodes[yi];
-  Node* first = cg->nodes[xi];
-   
-  std::vector<Node*> path;
-  Node* tmp = last;
-  while (true) {
-    if ((tmp->args).size() != 1) {
-      std::cout << "failure, no forks are allowed yet\n";
-      return y;
-    }
-    path.push_back(tmp);
-    if (xi != (tmp->args)[0]) {
-      tmp = cg->nodes[(tmp->args)[0]];
-    } else {
-      path.push_back(cg->nodes[xi]);
-      break;
-    }
-  }
-  // path is last, ..., first
-  // now create the nodes
-  VariableIndex prev = xi;
-  Node* current = nullptr;
-  VariableIndex accum;
-  VariableIndex grad_resi;
-  while (path.size() > 1) {
-    path.pop_back();
-    current = path[path.size()-1]; // current_node
-    const std::vector<std::string> v = {""};
-    if (current->as_string(v) == "cube()") {
-      grad_resi = cg->add_function<CubeGrad>({prev});
-    } else if (current->as_string(v) == "sqrt()") {
-      grad_resi = cg->add_function<SqrtGrad>({prev});
-    } else {
-      std::cout << "failure, only cube node is implemented\n";
-      return y;
-    }
 
-    if (prev == xi) {
-      accum = grad_resi;
-    } else {
-      accum = cg->add_function<MatrixMultiply>({grad_resi, accum});
-    }
+VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results, 
+                            ComputationGraph* cg, 
+                            VariableIndex fi, VariableIndex xi) {
+  std::map<VariableIndex, VariableIndex>::iterator it;
+  it = results.find(fi);
+  if (it != results.end())
+    return it->second;
+  Node* current = cg->nodes[fi];
+  if ((current->args).size() == 0) {
+    VariableIndex res;
+    if (xi == fi) res = ONE;
+    else res = ZERO;
+    results[fi] = res;
+    return res;
   }
-  return Expression(cg, accum);
+
+  //check that the result is not clearly zero
+  bool all_zero = true;
+  for (int i = 0; i < (current->args).size(); i++) {
+    VariableIndex arg = current->args[i];
+    if (get_grad_node(results, cg, arg, xi) != ZERO) all_zero = false;
+  }
+  if (all_zero) {
+    results[fi] = ZERO;
+    return ZERO;
+  }
+
+  // first get the gradient of fi
+  const std::vector<std::string> v = {""};
+  VariableIndex grad_resi;
+  if (current->as_string(v) == "cube()") {
+    grad_resi = cg->add_function<CubeGrad>(current->args);
+  } else if (current->as_string(v) == "sqrt()") {
+    grad_resi = cg->add_function<SqrtGrad>(current->args);
+  } else {
+    std::cout << "failure, only cube node is implemented\n";
+    return ONE; // might need to fix this
+  }
+
+  //grad resi is the variable index for the output of the gradient node
+  VariableIndex accum = ZERO;
+  for (int i = 0; i < (current->args).size(); i++) {
+    VariableIndex arg = (current->args)[i];
+    VariableIndex dfidx = get_grad_node(results, cg, arg, xi);
+    if (dfidx == ZERO) continue;
+    VariableIndex dfdfi = cg->add_function<PickElement>({grad_resi}, i);
+    VariableIndex dfdx;
+    if (dfidx == ONE) dfdx = dfdfi;
+    else dfdx = cg->add_function<MatrixMultiply>({dfdfi, dfidx});
+    if (accum == ZERO) accum = dfdx;
+    else accum = cg->add_function<Sum>({dfdx, accum});
+  }
+  results[fi] = accum;
+  return fi;
+}
+
+Expression gradient_op(const Expression& y, const Expression& x) {
+  std::map<VariableIndex, VariableIndex> get_gradients;
+  VariableIndex res = get_grad_node(get_gradients, y.pg, y.i, x.i);
+  if (res == ZERO) std::cout << "Error, output is zero\n";
+  return Expression(y.pg, res);
 }
 
 }  // namespace dynet

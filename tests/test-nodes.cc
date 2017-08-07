@@ -604,6 +604,7 @@ BOOST_AUTO_TEST_CASE( sqrt_gradient ) {
 
 //Expression grad(sqrt(x), x)
 BOOST_AUTO_TEST_CASE( grad_sqrt_gradient ) {
+  std::cout << "this is the one broo --------------------------------------\n";
   dynet::ComputationGraph cg;
   Expression x3 = parameter(cg, param3);
   Expression y1 = sqrt(x3);

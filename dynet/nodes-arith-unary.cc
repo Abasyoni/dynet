@@ -59,7 +59,7 @@ Dim Cube::dim_forward(const vector<Dim>& xs) const {
 
 template<class MyDevice>
 void Cube::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "cube_f\n";
+  std::cout << "c_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().cube();
 }
 
@@ -70,7 +70,7 @@ void Cube::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "cube_b\n";
+  std::cout << "c_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += dEdf.tvec() * xs[0]->tvec().square() * 3.f;
 }
 DYNET_NODE_INST_DEV_IMPL(Cube)
@@ -95,7 +95,7 @@ Dim CubeGrad::dim_forward(const vector<Dim>& xs) const {
 
 template<class MyDevice>
 void CubeGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "cubeG_f\n";
+  std::cout << "cg_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().square() * 3.f;
 }
 
@@ -106,7 +106,7 @@ void CubeGrad::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "cubeG_b\n";
+  std::cout << "cg_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += dEdf.tvec() * xs[0]->tvec() * 6.f;
 }
 DYNET_NODE_INST_DEV_IMPL(CubeGrad)
@@ -130,7 +130,7 @@ Dim Sqrt::dim_forward(const vector<Dim>& xs) const {
 
 template<class MyDevice>
 void Sqrt::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "sqrt_f\n";
+  std::cout << "s_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().sqrt();
 }
 
@@ -141,7 +141,7 @@ void Sqrt::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "sqrt_b\n";
+  std::cout << "s_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += fx.tvec().binaryExpr(dEdf.tvec(), FSqrtBackward());
 }
 DYNET_NODE_INST_DEV_IMPL(Sqrt)
@@ -165,7 +165,7 @@ Dim SqrtGrad::dim_forward(const vector<Dim>& xs) const {
 
 template<class MyDevice>
 void SqrtGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "sqrtG_f\n";
+  std::cout << "sg_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().sqrt().inverse() / 2.f;
 }
 
@@ -176,7 +176,7 @@ void SqrtGrad::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "sqrtG_b\n";
+  std::cout << "sg_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += xs[0]->tvec().inverse() * fx.tvec() / (-2.f);
 }
 DYNET_NODE_INST_DEV_IMPL(SqrtGrad)
