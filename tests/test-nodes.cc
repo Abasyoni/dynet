@@ -296,6 +296,45 @@ BOOST_AUTO_TEST_CASE( subtractscalar_gradient ) {
   BOOST_CHECK(check_grad(mod, z, 0));
 }
 
+//Expression sum_grad(const std::initializer_list<Expression>& xs);
+BOOST_AUTO_TEST_CASE( sum_grad_gradient ) {
+  dynet::ComputationGraph cg;
+  Expression x1 = parameter(cg, param1); 
+  Expression x2 = parameter(cg, param2);
+  Expression y = sum_grad({x1, x2});
+  Expression z = sum_elems(y);
+  BOOST_CHECK(check_grad(mod, z, 0));
+}
+
+//Expression grad_op(const Expression& x, const Expression& y);
+BOOST_AUTO_TEST_CASE( grad_op_soph_gradient ) {
+  dynet::ComputationGraph cg;
+  Expression x1 = parameter(cg, param1);
+  Expression x2 = parameter(cg, param2);
+  Expression x3 = parameter(cg, param3);
+  Expression y1 = sqrt(x3);
+  Expression y2 = cube(x2);
+  Expression y3 = y2 + x1;
+  Expression y4 = cube(y3);
+  Expression y5 = y1 + x2;
+  Expression y6 = y4 + y5;
+  Expression z = gradient_op(y6, x2);
+  Expression w = sum_elems(z);
+  BOOST_CHECK(check_grad(mod, w, 0));
+}
+
+// testing the gradient operator with sum
+BOOST_AUTO_TEST_CASE( grad_sum_gradient ) {
+  std::cout << "this is the one ---------------------------------------\n";
+  dynet::ComputationGraph cg;
+  Expression x1 = parameter(cg, param1); 
+  Expression x2 = parameter(cg, param2);
+  Expression y = x1 + x2;
+  Expression z = gradient_op(y, x2);
+  Expression w = sum_elems(z);
+  BOOST_CHECK(check_grad(mod, w, 0));
+}
+
 // Expression operator*(const Expression& x, const Expression& y);
 BOOST_AUTO_TEST_CASE( multiply_gradient ) {
   dynet::ComputationGraph cg;
@@ -603,8 +642,7 @@ BOOST_AUTO_TEST_CASE( sqrt_gradient ) {
 }
 
 //Expression grad(sqrt(x), x)
-BOOST_AUTO_TEST_CASE( grad_sqrt_gradient ) {
-  std::cout << "this is the one broo --------------------------------------\n";
+BOOST_AUTO_TEST_CASE( grad_sqrt_cube_gradient ) {
   dynet::ComputationGraph cg;
   Expression x3 = parameter(cg, param3);
   Expression y1 = sqrt(x3);

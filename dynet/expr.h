@@ -602,6 +602,8 @@ inline Expression sum(const std::initializer_list<Expression>& xs) { return deta
 template <typename T>
 inline Expression sum(const T& xs) { return detail::f<Sum>(xs); }
 
+inline Expression sum_grad(const std::initializer_list<Expression>& xs) { return detail::f<SumGrad>(xs); }
+
 /**
  * \ingroup arithmeticoperations
  * \brief Sum all elements

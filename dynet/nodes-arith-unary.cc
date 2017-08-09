@@ -2,6 +2,7 @@
 
 #include "dynet/nodes-macros.h"
 #include "dynet/functors.h"
+#include <math.h>
 
 using namespace std;
 
@@ -52,14 +53,14 @@ string Cube::as_string(const vector<string>& arg_names) const {
 
 Dim Cube::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Cube")
-  return xs[0];
+  return xs[0]; 
 }
 
 #endif
 
 template<class MyDevice>
 void Cube::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "c_f" << endl;
+  //std::cout << "c_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().cube();
 }
 
@@ -70,7 +71,7 @@ void Cube::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "c_b" << endl;
+  //std::cout << "c_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += dEdf.tvec() * xs[0]->tvec().square() * 3.f;
 }
 DYNET_NODE_INST_DEV_IMPL(Cube)
@@ -88,15 +89,27 @@ string CubeGrad::as_string(const vector<string>& arg_names) const {
 
 Dim CubeGrad::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Square")
-  return xs[0];
+  // for now, only works for xs[0] is one dimensioanl
+  std::vector<long> sizes;
+  sizes.push_back(xs[0].size());
+  for (int i = 0; i < xs[0].ndims(); i++) {
+    sizes.push_back(xs[0].size(i));
+  }
+  Dim res = Dim(sizes);
+  return res;
 }
 
 #endif
 
 template<class MyDevice>
 void CubeGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "cg_f" << endl;
-  fx.tvec().device(*dev.edevice) = xs[0]->tvec().square() * 3.f;
+  //std::cout << "cg_f" << endl;
+  fx.tvec().device(*dev.edevice) = fx.tvec().setZero();
+  int len = xs[0]->d[0];
+  for (int i = 0; i < len; i++) {
+    fx.tvec()(i * len + i) = (xs[0]->tvec()(i))*(xs[0]->tvec()(i))*3.f;
+  }
+  //std::cout << fx.tvec();
 }
 
 template<class MyDevice>
@@ -106,8 +119,11 @@ void CubeGrad::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "cg_b" << endl;
-  dEdxi.tvec().device(*dev.edevice) += dEdf.tvec() * xs[0]->tvec() * 6.f;
+  //std::cout << "cg_b" << endl;
+  int len = xs[0]->d[0];
+  for (int i = 0; i < len; i++) {
+    dEdxi.tvec()(i) += (dEdf.tvec()(i * len + i)) * (xs[0]->tvec()(i)) * 6.f; 
+  }
 }
 DYNET_NODE_INST_DEV_IMPL(CubeGrad)
 
@@ -130,8 +146,9 @@ Dim Sqrt::dim_forward(const vector<Dim>& xs) const {
 
 template<class MyDevice>
 void Sqrt::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "s_f" << endl;
+  //std::cout << "s_f" << endl;
   fx.tvec().device(*dev.edevice) = xs[0]->tvec().sqrt();
+  //std::cout << xs[0]->tvec() << "\n";
 }
 
 template<class MyDevice>
@@ -141,7 +158,7 @@ void Sqrt::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "s_b" << endl;
+  //std::cout << "s_b" << endl;
   dEdxi.tvec().device(*dev.edevice) += fx.tvec().binaryExpr(dEdf.tvec(), FSqrtBackward());
 }
 DYNET_NODE_INST_DEV_IMPL(Sqrt)
@@ -158,15 +175,27 @@ string SqrtGrad::as_string(const vector<string>& arg_names) const {
 
 Dim SqrtGrad::dim_forward(const vector<Dim>& xs) const {
   DYNET_ARG_CHECK(xs.size() == 1, "Failed input count check in Sqrt")
-  return xs[0];
+  // for now, only works for xs[0] is one dimensioanl
+  std::vector<long> sizes;
+  sizes.push_back(xs[0].size());
+  for (int i = 0; i < xs[0].ndims(); i++) {
+    sizes.push_back(xs[0].size(i));
+  }
+  Dim res = Dim(sizes);
+  return res;
 }
 
 #endif
 
 template<class MyDevice>
 void SqrtGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "sg_f" << endl;
-  fx.tvec().device(*dev.edevice) = xs[0]->tvec().sqrt().inverse() / 2.f;
+  //std::cout << "sg_f" << endl;
+  fx.tvec().device(*dev.edevice) = fx.tvec().setZero();
+  int len = xs[0]->d[0];
+  for (int i = 0; i < len; i++) {
+    fx.tvec()(i * len + i) = 1.f/(2.f * sqrt(xs[0]->tvec()(i)));
+  }
+  //std::cout << fx.tvec();
 }
 
 template<class MyDevice>
@@ -176,8 +205,12 @@ void SqrtGrad::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "sg_b" << endl;
-  dEdxi.tvec().device(*dev.edevice) += xs[0]->tvec().inverse() * fx.tvec() / (-2.f);
+  //std::cout << "sg_b" << endl;
+  int len = xs[0]->d[0];
+  for (int i = 0; i < len; i++) {
+    float xi = xs[0]->tvec()(i);
+    dEdxi.tvec()(i) += (-1.f /(4.f * xi * (sqrt (xi)))) * (dEdf.tvec()(i * len + i)); 
+  }
 }
 DYNET_NODE_INST_DEV_IMPL(SqrtGrad)
 

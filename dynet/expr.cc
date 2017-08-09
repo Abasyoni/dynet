@@ -228,6 +228,7 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
   if (it != results.end())
     return it->second;
   Node* current = cg->nodes[fi];
+  std::cout << "current node: " << current->as_string({"a", "b"}) << "\n";
   if ((current->args).size() == 0) {
     VariableIndex res;
     if (xi == fi) res = ONE;
@@ -237,25 +238,28 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
   }
 
   //check that the result is not clearly zero
-  bool all_zero = true;
-  for (int i = 0; i < (current->args).size(); i++) {
-    VariableIndex arg = current->args[i];
-    if (get_grad_node(results, cg, arg, xi) != ZERO) all_zero = false;
-  }
-  if (all_zero) {
-    results[fi] = ZERO;
-    return ZERO;
-  }
-
+  //bool all_zero = true;
+  //for (int i = 0; i < (current->args).size(); i++) {
+  //  VariableIndex arg = current->args[i];
+  //  if (get_grad_node(results, cg, arg, xi) != ZERO) all_zero = false;
+  //}
+  //if (all_zero) {
+  //  results[fi] = ZERO;
+  //  return ZERO;
+  //}
+  
+  std::cout << "about to check the node \n";
   // first get the gradient of fi
-  const std::vector<std::string> v = {""};
+  const std::vector<std::string> v = {"a", "b"};
   VariableIndex grad_resi;
-  if (current->as_string(v) == "cube()") {
+  if (current->as_string(v) == "cube(a)") {
     grad_resi = cg->add_function<CubeGrad>(current->args);
-  } else if (current->as_string(v) == "sqrt()") {
+  } else if (current->as_string(v) == "a + b") {
+    grad_resi = cg->add_function<SumGrad>(current->args);
+  } else if (current->as_string(v) == "sqrt(a)") {
     grad_resi = cg->add_function<SqrtGrad>(current->args);
   } else {
-    std::cout << "failure, only cube node is implemented\n";
+    std::cout << "failure, grad of " << current->as_string(v) << "is not implemented\n";
     return ONE; // might need to fix this
   }
 
@@ -265,21 +269,38 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
     VariableIndex arg = (current->args)[i];
     VariableIndex dfidx = get_grad_node(results, cg, arg, xi);
     if (dfidx == ZERO) continue;
-    VariableIndex dfdfi = cg->add_function<PickElement>({grad_resi}, i);
+    VariableIndex dfdfi = grad_resi;
+    if ((current->args).size() > 1) {
+      dfdfi = cg->add_function<PickElement>({grad_resi}, i);
+      std::cout << "passed the pick i function\n";
+      std::cout << "node is : " << current->as_string(v) << "\n";
+    }
     VariableIndex dfdx;
     if (dfidx == ONE) dfdx = dfdfi;
-    else dfdx = cg->add_function<MatrixMultiply>({dfdfi, dfidx});
+    else {
+      std::cout << "about to add a matrix multiply function\n";
+      std::cout << "node is : " << current->as_string(v) << "\n";
+      std::cout << "nodes are : " << dfdfi << " " << dfidx << "\n";
+      dfdx = cg->add_function<MatrixMultiply>({dfdfi, dfidx});
+    }
     if (accum == ZERO) accum = dfdx;
-    else accum = cg->add_function<Sum>({dfdx, accum});
+    else {
+      std::cout << "about to add to the accumulator\n";
+      accum = cg->add_function<Sum>({dfdx, accum});
+    }
   }
+  std::cout << "created the gradient node\n";
+  std::cout << "node is : " << current->as_string(v) << "\n";
+  std::cout << "index is : " << accum << "\n";
   results[fi] = accum;
-  return fi;
+  return accum;
 }
 
 Expression gradient_op(const Expression& y, const Expression& x) {
   std::map<VariableIndex, VariableIndex> get_gradients;
   VariableIndex res = get_grad_node(get_gradients, y.pg, y.i, x.i);
   if (res == ZERO) std::cout << "Error, output is zero\n";
+  std::cout << "done creating the node, variable index: " << res << "\n";
   return Expression(y.pg, res);
 }
 

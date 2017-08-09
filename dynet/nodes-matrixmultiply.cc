@@ -18,6 +18,7 @@ string MatrixMultiply::as_string(const vector<string>& arg_names) const {
 }
 
 Dim MatrixMultiply::dim_forward(const vector<Dim>& xs) const {
+  std::cout << xs[0] << " " << xs[1];
   DYNET_ARG_CHECK(xs.size() == 2, "Failed input count check in MatrixMultiply")
   DYNET_ARG_CHECK(xs[0].cols() == xs[1].rows(), "Mismatched input dimensions in MatrixMultiply: " << xs);
   if (xs[1].ndims() == 1) return Dim({xs[0].rows()}, max(xs[0].bd, xs[1].bd));

@@ -127,6 +127,92 @@ void Sum::backward_dev_impl(const MyDevice & dev,
 }
 DYNET_NODE_INST_DEV_IMPL(Sum)
 
+// ************* Sum *************
+
+#ifndef __CUDACC__
+
+string SumGrad::as_string(const vector<string>& arg_names) const {
+  ostringstream s;
+  s << arg_names[0];
+  for (unsigned i = 1; i < arg_names.size(); ++i)
+    s << " + " << arg_names[i];
+  return s.str();
+}
+
+Dim SumGrad::dim_forward(const vector<Dim>& xs) const {
+  //Dim d = xs[0].truncate();
+  //unsigned int batch = d.bd;
+  //for (unsigned i = 1; i < xs.size(); ++i) {
+  //  DYNET_ARG_CHECK(d.single_batch() == xs[i].truncate().single_batch(),
+  //                          "Mismatched input dimensions in Sum: " << xs);
+  //  batch = max(xs[i].bd, batch);
+  //}
+  // for now, only works for xs[0] is one dimensioanl
+  std::vector<long> sizes;
+  sizes.push_back(xs.size());
+  sizes.push_back(xs[0].size());
+  for (int i = 0; i < xs[0].ndims(); i++) {
+    sizes.push_back(xs[0].size(i));
+  }
+  Dim res = Dim(sizes);
+  std::cout << "hurray dim : " << res << "\n";
+  return res;
+}
+
+int SumGrad::autobatch_sig(const ComputationGraph &cg, SigMap &sm) const {
+  Sig s(nt::sum_grad);
+  s.add_node(args.size());
+  // Two cases:
+  // If unbatched, it's just an elementwise addition
+  // TODO: This will be more efficient if we identify arguments that are used
+  //       multiple times (e.g. bias vectors)
+  if(dim.bd == 1) {
+    s.add_int(-2);
+  // Otherwise, make sure the dimensions match and that batched nodes don't intersect
+  } else {
+    s.add_dim(dim);
+    for(auto ai : args) {
+      s.add_int(cg.nodes[ai]->dim.bd == 1 ? ai : -1);
+    }
+  }
+  return sm.get_idx(s);
+}
+
+std::vector<int> SumGrad::autobatch_concat(const ComputationGraph & cg) const {
+  vector<int> ret(args.size(), 1);
+  // If batched, true if multiple batched input as well
+  if(dim.bd != 1)
+    for(size_t i = 0; i < args.size(); ++i)
+      ret[i] = cg.nodes[args[i]]->dim.bd == 1 ? 0 : 1;
+  return ret;
+}
+
+#endif
+
+template<class MyDevice>
+void SumGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
+  std::cout << "SumGrad_f\n";
+  fx.tvec().device(*dev.edevice) = fx.tvec().setZero();
+  int args = xs.size();
+  int len = xs[0]->d[0];
+  for (int i = 0; i < args; i++) {
+    for (int j = 0; j < len; j++) {
+      fx.tvec()(i*len*len + j*len + j) = 1.f;
+    }
+  }
+}
+
+template<class MyDevice>
+void SumGrad::backward_dev_impl(const MyDevice & dev,
+                             const vector<const Tensor*>& xs,
+                             const Tensor& fx,
+                             const Tensor& dEdf,
+                             unsigned i,
+                             Tensor& dEdxi) const {
+  std::cout << "SumGrad_b\n";
+}
+DYNET_NODE_INST_DEV_IMPL(SumGrad)
+
 // ************* SumElements *************
 
 #ifndef __CUDACC__
