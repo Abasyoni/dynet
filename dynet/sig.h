@@ -15,7 +15,7 @@ namespace dynet {
       squared_distance, softmax, pnls, pickrange, scalar_mult,
       input, scalar_input, lookup, 
       COMPLEX,
-      affine, matmul,
+      affine, matmul, tens_contr, 
       vanilla_lstm_gates, vanilla_lstm_h, vanilla_lstm_c,
     };
   }
