@@ -590,6 +590,8 @@ Expression operator-(const Expression& x, real y);
  */
 Expression operator*(const Expression& x, const Expression& y);
 
+Expression contraction(const Expression& x, const Expression& y);
+
 /**
  * \ingroup arithmeticoperations
  * \brief Matrix-scalar multiplication

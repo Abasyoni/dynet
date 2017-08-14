@@ -209,6 +209,10 @@ Expression layer_norm(const Expression& x, const Expression& g, const Expression
 
 Expression weight_norm(const Expression& w, const Expression& g){return Expression(w.pg, w.pg->add_function<WeightNormalization>({w.i,g.i}));}
 
+Expression contraction(const Expression& x, const Expression& y) {
+  return Expression(x.pg, x.pg->add_function<TensorContraction>({x.i, y.i}));
+}
+
 Expression to_device(const Expression & x, Device *device) {
   DYNET_ASSERT(x.pg->nodes[x.i]->device != device, "It is unnecessary to peform to_device operation in the same devices");
   return Expression(x.pg, x.pg->add_function<ToDevice>({x.i}, device));
@@ -234,7 +238,7 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
   if (it != results.end())
     return it->second;
   Node* current = cg->nodes[fi];
-  std::cout << "current node: " << current->as_string({"a", "b"}) << "\n";
+  //std::cout << "current node: " << current->as_string({"a", "b"}) << "\n";
   if ((current->args).size() == 0) {
     VariableIndex res;
     if (xi == fi) res = ONE;
@@ -254,7 +258,7 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
   //  return ZERO;
   //}
   
-  std::cout << "about to check the node \n";
+  //std::cout << "about to check the node \n";
   // first get the gradient of fi
   const std::vector<std::string> v = {"a", "b"};
   VariableIndex grad_resi;
@@ -278,26 +282,26 @@ VariableIndex get_grad_node(std::map<VariableIndex, VariableIndex>& results,
     VariableIndex dfdfi = grad_resi;
     if ((current->args).size() > 1) {
       dfdfi = cg->add_function<PickElement>({grad_resi}, i);
-      std::cout << "passed the pick i function\n";
-      std::cout << "node is : " << current->as_string(v) << "\n";
+      //std::cout << "passed the pick i function\n";
+      //std::cout << "node is : " << current->as_string(v) << "\n";
     }
     VariableIndex dfdx;
     if (dfidx == ONE) dfdx = dfdfi;
     else {
-      std::cout << "about to add a matrix multiply function\n";
-      std::cout << "node is : " << current->as_string(v) << "\n";
-      std::cout << "nodes are : " << dfdfi << " " << dfidx << "\n";
+      //std::cout << "about to add a matrix multiply function\n";
+      //std::cout << "node is : " << current->as_string(v) << "\n";
+      //std::cout << "nodes are : " << dfdfi << " " << dfidx << "\n";
       dfdx = cg->add_function<MatrixMultiply>({dfdfi, dfidx});
     }
     if (accum == ZERO) accum = dfdx;
     else {
-      std::cout << "about to add to the accumulator\n";
+      //std::cout << "about to add to the accumulator\n";
       accum = cg->add_function<Sum>({dfdx, accum});
     }
   }
-  std::cout << "created the gradient node\n";
-  std::cout << "node is : " << current->as_string(v) << "\n";
-  std::cout << "index is : " << accum << "\n";
+  //std::cout << "created the gradient node\n";
+  //std::cout << "node is : " << current->as_string(v) << "\n";
+  //std::cout << "index is : " << accum << "\n";
   results[fi] = accum;
   return accum;
 }
@@ -306,7 +310,7 @@ Expression gradient_op(const Expression& y, const Expression& x) {
   std::map<VariableIndex, VariableIndex> get_gradients;
   VariableIndex res = get_grad_node(get_gradients, y.pg, y.i, x.i);
   if (res == ZERO) std::cout << "Error, output is zero\n";
-  std::cout << "done creating the node, variable index: " << res << "\n";
+  //std::cout << "done creating the node, variable index: " << res << "\n";
   return Expression(y.pg, res);
 }
 

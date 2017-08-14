@@ -155,7 +155,7 @@ Dim SumGrad::dim_forward(const vector<Dim>& xs) const {
     sizes.push_back(xs[0].size(i));
   }
   Dim res = Dim(sizes);
-  std::cout << "hurray dim : " << res << "\n";
+  //std::cout << "hurray dim : " << res << "\n";
   return res;
 }
 
@@ -191,7 +191,7 @@ std::vector<int> SumGrad::autobatch_concat(const ComputationGraph & cg) const {
 
 template<class MyDevice>
 void SumGrad::forward_dev_impl(const MyDevice & dev, const vector<const Tensor*>& xs, Tensor& fx) const {
-  std::cout << "SumGrad_f\n";
+  //std::cout << "SumGrad_f\n";
   fx.tvec().device(*dev.edevice) = fx.tvec().setZero();
   int args = xs.size();
   int len = xs[0]->d[0];
@@ -209,7 +209,7 @@ void SumGrad::backward_dev_impl(const MyDevice & dev,
                              const Tensor& dEdf,
                              unsigned i,
                              Tensor& dEdxi) const {
-  std::cout << "SumGrad_b\n";
+  //std::cout << "SumGrad_b\n";
 }
 DYNET_NODE_INST_DEV_IMPL(SumGrad)
 

@@ -343,7 +343,6 @@ BOOST_AUTO_TEST_CASE( grad_op_soph_gradient ) {
 
 // testing the gradient operator with sum
 BOOST_AUTO_TEST_CASE( grad_sum_gradient ) {
-  std::cout << "this is the one ---------------------------------------\n";
   dynet::ComputationGraph cg;
   Expression x1 = parameter(cg, param1); 
   Expression x2 = parameter(cg, param2);
@@ -1388,6 +1387,24 @@ BOOST_AUTO_TEST_CASE( sum_cols_gradient ) {
   Expression y = tanh(sum_cols(xsquare));
   Expression z = sum_elems(y);
   BOOST_CHECK(check_grad(mod, z, 0));
+}
+
+// Expression contraction(const Expression& x, const Expression& y);
+BOOST_AUTO_TEST_CASE( contraction_gradient ) {
+  dynet::ComputationGraph cg;
+  std::vector<float> batch_vals1(5*3*4*7);
+  for (unsigned i = 0; i < batch_vals1.size(); i++) {
+    batch_vals1[i] = i * 0.011f + (i+1) * 0.001f;
+  }
+  Expression x = input(cg, Dim({5, 3, 4, 7}), batch_vals1);
+  std::vector<float> batch_vals2(4*7*9);
+  for (unsigned i = 0; i < batch_vals2.size(); i++) {
+    batch_vals2[i] = i * 0.011f + (i+1) * 0.001f;
+  }
+  Expression y = input(cg, Dim({4, 7, 9}), batch_vals2);
+  Expression z = contraction(x, y);
+  Expression w = sum_elems(z);
+  BOOST_CHECK(check_grad(mod, w, 0)); 
 }
 
 // Expression conv2d(const Expression& x ,const Expression& f, const std::vector<unsigned>& stride, bool is_valid);
